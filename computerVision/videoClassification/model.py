@@ -105,8 +105,26 @@ parser.add_argument(
     help='epoch interval to save the model')
 
 parser.add_argument(
+    '--batch_size',
+    default=3,
+    type=int,
+    help='batch size for training and testing dataloader')
+
+parser.add_argument(
+    '--num_workers',
+    default=6,
+    type=int,
+    help='number of threads to use')
+
+parser.add_argument(
+    '--data',
+    default='MLclips/',
+    type=str,
+    help='path of the results directory')
+
+parser.add_argument(
     '--results',
-    default='',
+    default='r3d_18FTweights2',
     type=str,
     help='path of the results directory')
 
@@ -150,6 +168,10 @@ model = nn.DataParallel(model, device_ids=None)
 optimizer = optim.SGD(model.parameters(), lr=args.learning_rate,
  momentum=args.momentum, weight_decay=args.weight_decay)
 
+# Creating results folder if not already exists
+results = args.results
+if not os.path.isdir(results):
+    os.mkdir(results)
 ############################################################################
 #                             END OF MODEL DEFINATION                      #
 ############################################################################
@@ -456,38 +478,40 @@ for i in range(1, 5):
 
 # Defining spatial transformations
 spatial_transform = Compose([
-            MultiScaleRandomCrop(scales, 112),
+            MultiScaleRandomCrop(scales, 100),
             RandomHorizontalFlip(),
             ToTensor(), Normalize([0, 0, 0], [1, 1, 1])
         ])
 
 # Load the trainset
 trainset = Cichlids(
-    root='MLclips/training',
-    preload=False, spatial_transform=spatial_transform, transform=None
+    root=args.data + 'training',
+    preload=False, spatial_transform=spatial_transform
 )
 
-trainset_loader = DataLoader(trainset, batch_size=3, shuffle=True, num_workers=6)
+trainset_loader = DataLoader(trainset, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers)
 
 # Load the testset
 testset = Cichlids(
-    root='MLclips/testing',
-    preload=False, spatial_transform= spatial_transform, transform=None
+    root=args.data + 'testing',
+    preload=False, spatial_transform= spatial_transform
 )
 
-testset_loader = DataLoader(testset, batch_size=1, shuffle=False, num_workers=1)
+testset_loader = DataLoader(testset, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers)
 
 ############################################################################
 #                             END OF DATA TRANSFORMATIONS                  #
 ############################################################################
 
-results = 'r3d_18FTweights2'
-if not os.path.isdir(results):
-    os.mkdir(results)
+############################################################################
+# TRAINING AND TESTING DEFINITIONS                                         #
+# TODO: Define train and test function along with saving models and        #
+# creating confusion_matrix                                                #
+############################################################################
 
-def train_model(epochs=50, log_interval=1000):    
+def train_model(epochs=args.epochs, log_interval=1000):    
     model.train()
-    for t in range(epochs):
+    for epoch in range(epochs):
         start = time()
         iteration = 0
         avg_loss = 0
@@ -514,29 +538,29 @@ def train_model(epochs=50, log_interval=1000):
             
             if iteration % log_interval == 0:
                 print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
-                    t, batch_idx * len(data), len(trainset_loader.dataset),
+                    epoch, batch_idx * len(data), len(trainset_loader.dataset),
                     100. * batch_idx / len(trainset_loader), loss.item()))
             iteration += 1
             pred = output.max(1, keepdim=True)[1] # get the index of the max log-probability
             correct += pred.eq(target.view_as(pred)).sum().item()
             
         end = time()
-        print ('\nSummary: Epoch {}'.format(t))
+        print ('\nSummary: Epoch {}'.format(epoch))
         print('Time taken for this epoch: {:.2f}s'.format(end-start))
         print('Train set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)'.format(
         avg_loss/len(trainset_loader.dataset), correct, len(trainset_loader.dataset),
         100. * correct / len(trainset_loader.dataset)))
         
-        save_file_path = os.path.join(results,
-                                      'save_{}.pth'.format(t))
-        states = {
-            'epoch': t + 1,
-            'state_dict': model.state_dict(),
-            'optimizer': optimizer.state_dict(),
-        }
-        torch.save(states, save_file_path)
-        check_accuracy(t) # evaluate at the end of epoch
-    torch.cuda.empty_cache()
+        if t % args.save_interval == 0:
+            save_file_path = os.path.join(results, 'save_{}.pth'.format(epoch))
+            states = {
+                'epoch': epoch + 1,
+                'state_dict': model.state_dict(),
+                'optimizer': optimizer.state_dict(),
+            }
+            torch.save(states, save_file_path)
+        check_accuracy(epoch) # evaluate at the end of epoch
+    torch.cuda.empty_cache() # Clear cache after training
 
 def check_accuracy(epoch):
     num_correct = 0
@@ -577,5 +601,17 @@ def check_accuracy(epoch):
 
     confusion_matrix = pd.DataFrame(confusion_matrix)
     confusion_matrix.to_csv(results + '/ConfusionMatrix_' + str(epoch) + '.csv')
-    
+
+############################################################################
+#                 END OF TRAINING AND TESTING DEFINITIONS                  #
+############################################################################
+
+############################################################################
+#                             TRAIN THE MODEL                              #
+############################################################################    
+
 train_model()
+
+############################################################################
+#                          IT'S OVER, IT'S DONE!                           #
+############################################################################    
