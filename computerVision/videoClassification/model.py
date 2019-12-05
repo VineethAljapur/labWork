@@ -42,11 +42,14 @@ except ImportError:
 #   model (str, default = r3d)                                             #
 #   pre_trained (bool, default = True)                                     #
 #   fine_tune (bool, default = True)                                       #
+#   num_classes (int, default = 10)                                        #
+#   epochs (int, default = 50)                                             #
 #   learning_rate (float, default = 0.001)                                 #
 #   momentum (float, default = 0.9)                                        #
 #   weight_decay (float, default = 1e-3)                                   #
 #   epochs (int, default = 50)                                             #
 #   save_interval (int, default = 5)                                       #
+#   results (str, default = 'results')                                     #
 ############################################################################
 parser = argparse.ArgumentParser()
 
@@ -120,7 +123,7 @@ parser.add_argument(
     '--data',
     default='MLclips/',
     type=str,
-    help='path of the results directory')
+    help='path of the data directory')
 
 parser.add_argument(
     '--results',
@@ -472,6 +475,11 @@ class MultiScaleRandomCrop(object):
 
         return img.resize((self.size, self.size), self.interpolation)
 
+    def randomize_parameters(self):
+        self.scale = self.scales[random.randint(0, len(self.scales) - 1)]
+        self.tl_x = random.random()
+        self.tl_y = random.random()
+
 scales = [1.0]
 for i in range(1, 5):
     scales.append(scales[-1] * 0.84089641525)
@@ -551,7 +559,7 @@ def train_model(epochs=args.epochs, log_interval=1000):
         avg_loss/len(trainset_loader.dataset), correct, len(trainset_loader.dataset),
         100. * correct / len(trainset_loader.dataset)))
         
-        if t % args.save_interval == 0:
+        if epoch % args.save_interval == 0:
             save_file_path = os.path.join(results, 'save_{}.pth'.format(epoch))
             states = {
                 'epoch': epoch + 1,
