@@ -81,18 +81,6 @@ if __name__ == "__main__":
         with torch.no_grad():
             detections = model(input_imgs)
             detections = non_max_suppression(detections, opt.conf_thres, opt.nms_thres)
-
-        # Log progress
-        # current_time = time.time()
-        # inference_time = datetime.timedelta(seconds=current_time - prev_time)
-        # prev_time = current_time
-        # print("\t+ Batch %d, Inference Time: %s" % (batch_i, inference_time))
-
-        # Save image and detections
-    #     imgs.extend(img_paths)
-    #     img_detections.extend(detections)
-
-    # print (imgs)
     print ('Time taken for object detection: ', datetime.timedelta(seconds=time.time() - prev_time))
     sys.exit()
     # Bounding-box colors
@@ -106,59 +94,19 @@ if __name__ == "__main__":
     video = cv2.VideoCapture(opt.image_folder)
     for img_i, (path, detections) in enumerate(zip(imgs, img_detections)):
 
-        # print("(%d) Image: '%s'" % (img_i, path))
-
-        # Create plot
-        # img = np.array(Image.open(path))
         video.set(1, path)
         res, img = video.read()
-        # img = video[path]
-        # plt.figure()
-        # fig, ax = plt.subplots(1)
-        # ax.imshow(img)
-
+        
         # Draw bounding boxes and labels of detections
         if detections is not None:
             # Rescale boxes to original image
             detections = rescale_boxes(detections, opt.img_size, img.shape[:2])
-            # unique_labels = detections[:, -1].cpu().unique()
-            # n_cls_preds = len(unique_labels)
-            # bbox_colors = random.sample(colors, n_cls_preds)
             for x1, y1, x2, y2, conf, cls_conf, cls_pred in detections:
 
                 print("\t+ Label: %s, Conf: %.5f" % (classes[int(cls_pred)], cls_conf.item()))
 
-                # box_w = x2 - x1
-                # box_h = y2 - y1
-
-                # color = bbox_colors[int(np.where(unique_labels == int(cls_pred))[0])]
-                # Create a Rectangle patch
-                # bbox = patches.Rectangle((x1, y1), box_w, box_h, linewidth=2, edgecolor='green', facecolor="none")
-                # Add the bbox to the plot
-                # ax.add_patch(bbox)
                 cv2.rectangle(img, (x1, y1), (x2, y2), (0, 255, 0), 2)
-                # Add label
-                # plt.text(
-                #     x1,
-                #     y1,
-                #     s=classes[int(cls_pred)],
-                #     color="white",
-                #     verticalalignment="top",
-                #     bbox={"color": 'green', "pad": 0},
-                # )
-
-        # Save generated image with detections
-        # plt.axis("off")
-        # plt.gca().xaxis.set_major_locator(NullLocator())
-        # plt.gca().yaxis.set_major_locator(NullLocator())
-        # filename = path.split("/")[-1].split(".")[0]
-        # filename = path
-        # plt.savefig(f"output/{filename}.png", bbox_inches="tight", pad_inches=0.0)
-        # plt.close()
-
-        # # Create plot using openCV
-        # display = cv2.imread(f"output/{filename}.png")
-
+                
         cv2.imshow('object detection', img)
 
         key = cv2.waitKey(33)
