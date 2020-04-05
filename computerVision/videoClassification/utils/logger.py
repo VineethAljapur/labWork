@@ -7,7 +7,7 @@ import logging
 
 def setup_logger(logFile, debug=False):
     """
-    Setup for the main cerberus logger.
+    Setup for the main Cichlids logger.
 
     Parameters
     ----------

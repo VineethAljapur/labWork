@@ -23,7 +23,7 @@ from spatial_transformations.Scale import Scale
 from spatial_transformations.RandomHorizontalFlip import RandomHorizontalFlip
 from spatial_transformations.MultiScaleRandomCrop import MultiScaleRandomCrop
 
-from CerberusDataLoader import Cerberus
+from CichlidsDataLoader import Cichlids
 
 
 class TestCalc(unittest.TestCase):
@@ -183,8 +183,8 @@ class TestCalc(unittest.TestCase):
         self.assertIsNotNone(confidence)
         self.assertEqual(len(confidence[0]), self.num_classes)
 
-    def test_cerberusDataLoader(self):
-        """Testing Cerberus Data Loader module
+    def test_CichlidsDataLoader(self):
+        """Testing Cichlids Data Loader module
 		Test Cases:
 			1. Getting a testset instance
 			2. Getting a dataLoader instance
@@ -203,7 +203,7 @@ class TestCalc(unittest.TestCase):
         )
 
         # Load the trainset
-        testset = Cerberus(
+        testset = Cichlids(
             root=self.dataDirectory,
             logger=self.logger,
             preload=False,
