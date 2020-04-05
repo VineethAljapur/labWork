@@ -7,8 +7,6 @@ import sys
 import skvideo
 from skvideo import io as vp
 from time import time
-import cProfile
-import pstats
 
 import argparse
 import numpy as np
@@ -464,11 +462,7 @@ if __name__ == "__main__":
 
     writer.close()
 
-    profile = cProfile.Profile()
-    profile.runcall(train_model)
-    ps = pstats.Stats(profile)
-    ps.print_stats()
-
+    train_model()
     ############################################################################
     #                          IT'S OVER, IT'S DONE!                           #
     ############################################################################
